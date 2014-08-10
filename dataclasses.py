@@ -3,6 +3,7 @@ import persistent
 class RegistryEntry(persistent.Persistent):
     id = None
     u_project_id = 0
+    regdate_co_ref = ''
     policy_number = ''
     insured_value = 0
     forename = ''
