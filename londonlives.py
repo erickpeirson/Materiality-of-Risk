@@ -4,6 +4,17 @@ from unidecode import unidecode
 
 from dataclasses import *
 
+def parseItemPage(url):
+    soup = _soupify(url)
+    datatable = _get_datatable(soup)
+    data = _enumerate_fields(datatable)
+
+    entry = RegistryEntry(**_map_fields(data))
+    return entry
+# end parseItemPage
+
+#### Helpers ####
+
 def _get_datatable(html):
     """
     Extract the ``table`` node containing data.
@@ -22,6 +33,7 @@ def _get_datatable(html):
         if table['class'][0] == 'jamietable':
             return table
     return None
+# end _get_datatable
 
 def _enumerate_fields(datatable):
     """
@@ -51,6 +63,7 @@ def _enumerate_fields(datatable):
             data.append((key, value))
 
     return data
+# end _enumerate_fields
 
 def _tryInt(value):
     """
@@ -71,6 +84,7 @@ def _tryInt(value):
     except:
         pass
     return value
+# end _tryInt
 
 def _soupify(url):
     """
@@ -88,6 +102,7 @@ def _soupify(url):
     response = urllib2.urlopen(url).read()
     soup = BeautifulSoup(response)
     return soup
+# end _soupify
 
 def _map_fields(data):
     """
@@ -128,11 +143,4 @@ def _map_fields(data):
         mapped_data[fieldmappings[datum[0]]] = datum[1]
 
     return mapped_data
-
-def parseItemPage(url):
-    soup = _soupify(url)
-    datatable = _get_datatable(soup)
-    data = _enumerate_fields(datatable)
-
-    entry = RegistryEntry(**_map_fields(data))
-    return entry
+# end _map_fields
