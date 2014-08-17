@@ -2,7 +2,9 @@ import urllib2
 from bs4 import BeautifulSoup
 from unidecode import unidecode
 
-from dataclasses import *
+from dataclasses import RegistryEntry
+
+ll_ = 'http://www.londonlives.org/'
 
 def parseItemPage(url):
     soup = _soupify(url)
@@ -12,6 +14,16 @@ def parseItemPage(url):
     entry = RegistryEntry(**_map_fields(data))
     return entry
 # end parseItemPage
+
+def listItemPages(url):
+    """
+    """
+    soup = _soupify(url)
+    table = _get_smalltable(soup)
+    urls = _get_view_urls(table)
+
+    return urls
+# end listItemPages
 
 #### Helpers ####
 
@@ -34,6 +46,26 @@ def _get_datatable(html):
             return table
     return None
 # end _get_datatable
+
+def _get_smalltable(html):
+    for table in html.find_all('table'):
+        if table['class'][0] == 'smalltable':
+            return table
+    return None
+# end _get_smalltable
+
+def _get_view_urls(table):
+    """
+    extract URLs for registry pages.
+    """
+    urls = []
+    for tr in table.children:
+        for td in tr.children:
+            if hasattr(td, 'a'):
+                if td.a is not None:
+                    urls.append(ll_ + td.a['href'])
+    return urls
+# end _get_view_urls
 
 def _enumerate_fields(datatable):
     """
@@ -118,29 +150,41 @@ def _map_fields(data):
     mapped_data : dict
         Keys correspond to :class:`.RegistryEntry` attributes.
     """
+    import re
 
     fieldmappings = {
         'Unique Project ID':                    'u_project_id',
         'Register Date/ Company/ Reference':    'regdate_co_ref',
         'Policy Number':                        'policy_number',
         'Insured Value in PSs':                 'insured_value',
-        'Forename':                             'forename',
-        'Surname':                              'surname',
-        'Occupation/Status':                    'occupation',
+        'Forename\s*([0-9]*)':                  'forename',
+        'Surname\s*([0-9]*)':                   'surname',
+        'Occupation/Status\s*([A-Z]*)':         'occupation',
         'Joint Occupation':                     'joint_occupation',
-        'Address':                              'address',
-        'Address Type':                         'address_type',
-        'Street Type':                          'street_type',
-        'Place Name 1':                         'placename_1',
-        'Place Name 2':                         'placename_2',
-        'Place Type':                           'place_type',
-        'Location Type':                        'location_type',
-        'Location Name':                        'location_name'
+        'Address\s*([0-9]*)':                   'address',
+        'Address Type\s*([0-9]*)':              'address_type',
+        'Street Type\s*([0-9]*)':               'street_type',
+        'Place Name\s*([0-9]*)':                'place_name',
+        'Place Type\s*([0-9]*)':                'place_type',
+        'Location Type\s*([0-9]*)':             'location_type',
+        'Location Name\s*([0-9]*)':             'location_name'
         }
+    
+    listfields = (  'address', 'address_type', 'placename', 'place_type',
+                    'occupation', 'street_type', 'location_type',
+                    'location_name', 'forename', 'surname'  )
 
     mapped_data = {}
     for datum in data:
-        mapped_data[fieldmappings[datum[0]]] = datum[1]
+        for pattern, field in fieldmappings.iteritems():
+            match = re.search(pattern, datum[0])
+            if match is not None:
+                if field in listfields:
+                    if field not in mapped_data:
+                        mapped_data[field] = []                
+                    mapped_data[field].append(datum[1])
+                else:
+                    mapped_data[field] = datum[1]
 
     return mapped_data
 # end _map_fields
