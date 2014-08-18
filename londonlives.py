@@ -181,7 +181,7 @@ def _map_fields(data):
             if match is not None:
                 if field in listfields:
                     if field not in mapped_data:
-                        mapped_data[field] = []                
+                        mapped_data[field] = []
                     mapped_data[field].append(datum[1])
                 else:
                     mapped_data[field] = datum[1]
